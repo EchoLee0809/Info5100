@@ -1,0 +1,1022 @@
+<html>
+<head>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<style>
+/* put a border around the svg element so we can see the coordinate system better. */
+body { font-family: "Open Sans"; } div { margin: 30px; }
+svg { border: solid black 1px; }
+/* The default styles for axis elements stink. What should they be? */
+.axis path {fill:none; stroke: #777;}
+.axis line {}
+</style>
+</head>
+<body>
+
+<div id="canvas"></div>
+
+<script>
+var eduData;
+var maxJobs;
+var maxRev;
+var maxGDP;
+
+//Load Json Data into eduData
+d3.json("EduScaled.json", function (error, data) {
+	eduData=data;
+
+	maxJobs= d3.max(eduData, function(d){return d.new_jobs_created});
+	maxRev= d3.max(eduData, function(d){return d.increased_state_revenue});
+	maxGDP= d3.max(eduData, function(d){return d.growth_gdp});
+
+//Defines parameters of circle
+radius=120;
+extension=450;
+svgSize=900;
+titlePadding=130;
+
+jobColor="#00aaaa";
+revColor="#004444";
+gdpColor="#900090";
+
+console.log("jobs: "+maxJobs);
+console.log("rev: "+maxRev);
+console.log("gdp: "+maxGDP);
+//Defines ceiling limits based on the maximum of each data type
+var jobLimit=20000;
+var revLimit=350000000;
+var gdpLimit=4000000000;
+
+var svg = d3.select("#canvas").append("svg").attr("height", svgSize+titlePadding).attr("width", svgSize);
+//Create the legend
+var linedata1 = [{"x":30, "y": 870},{"x":100, "y": 870}];
+var linedata2 = [{"x":30, "y": 910},{"x":100, "y": 910}];
+var linedata3 = [{"x":30, "y": 950},{"x":100, "y": 950}];
+
+
+var linefunction = d3.svg.line().x(function(d){return d.x;})
+								.y(function(d){return d.y;})
+								.interpolate("linear");
+
+
+var path1 = svg.append("path").attr("d",linefunction(linedata1))
+							  .attr("stroke",jobColor)
+							  .attr("stroke-width",4)
+							  .attr("opacity",0.7);
+
+var path2 = svg.append("path").attr("d",linefunction(linedata2))
+							  .attr("stroke",revColor)
+							  .attr("stroke-width",4)
+							  .attr("opacity",0.7);
+var path3 = svg.append("path").attr("d",linefunction(linedata3))
+							  .attr("stroke",gdpColor)
+							  .attr("stroke-width",4)
+							  .attr("opacity",0.7);							
+
+var text1 = svg.append("text").attr("x",103)
+							  .attr("y",873)
+							  .text("New Jobs Created")
+							  .attr("font-size",10)
+							  .attr("fill",jobColor);
+var text2 = svg.append("text").attr("x",103)
+							  .attr("y",913)
+							  .text("Increased State Revenue")
+							  .attr("font-size",10)
+							  .attr("fill",revColor);	
+var text3 = svg.append("text").attr("x",103)
+							  .attr("y",953)
+							  .text("Gdp Growth")
+							  .attr("font-size",10)
+							  .attr("fill",gdpColor);
+
+//Create Initial Circle Group and Title
+group=svg.append("svg:g").attr("transform", "translate(" + svgSize/2 + "," + (svgSize/2+titlePadding)+ ")");;
+group.append("circle")
+	.attr("class", "outercircle")
+	.attr("r", radius)
+	.attr("fill","none")
+	.attr("stroke-width",2)
+	.attr("stroke","grey");
+group.append("svg:circle")
+  .attr("r", radius-20)
+  .attr("fill", "none")
+  .attr("stroke-width",1)
+  .attr("stroke","grey")
+  .attr("class", "clock innercircle");
+group.append("svg:text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","20px")
+	.attr("fill",jobColor)
+	.text("How Achieving a 100% HS Graduation Rate Would Improve the Economy")
+	.attr("x",-320)
+	.attr("y",-520);
+group.append("svg:text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","20px")
+	.attr("fill",jobColor)
+	.text("(Net Benefits)")
+	.attr("x",-50)
+	.attr("y",-490);
+
+//Defines scales, with scaleC determining the spacing around the circumference
+pi = Math.PI;
+scaleC = d3.scale.linear().domain([0, 204]).range([0, 2 * pi]);
+scaleJobs= d3.scale.linear().domain([0,jobLimit]).range([0,extension]);
+scaleRev= d3.scale.linear().domain([0,revLimit]).range([0,extension]);
+scaleGDP= d3.scale.linear().domain([0,gdpLimit]).range([0,extension]);
+
+//Halfway Scale labels
+group.append("svg:circle")
+  .attr("r", radius+scaleJobs(jobLimit/2))
+  .attr("fill", "none")
+  .attr("stroke-width",1)
+  .attr("stroke","grey")
+  .attr("stroke-opacity",0.3)
+  .attr("class", "scale");
+var textArc1 = d3.svg.arc()
+    .innerRadius(radius+scaleJobs(jobLimit/2))
+    .outerRadius(radius+scaleJobs(jobLimit/2))
+    .startAngle(-Math.PI/30)
+    .endAngle(Math.PI / 6);
+group.append("path")
+	.attr("id","pathID1")
+	.attr("d",textArc1(1))
+	.attr("fill","none")
+	.attr("stroke-width","0");
+group.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",jobColor)
+	.append("textPath")
+	.attr("xlink:href","#pathID1")
+	.text("Jobs: "+jobLimit/2);
+var textArc1 = d3.svg.arc()
+    .innerRadius(radius+scaleJobs(jobLimit/2))
+    .outerRadius(radius+scaleJobs(jobLimit/2))
+    .startAngle(-Math.PI/2-0.1)
+    .endAngle(0);
+group.append("path")
+	.attr("id","pathID11")
+	.attr("d",textArc1(1))
+	.attr("fill","none")
+	.attr("stroke-width","0");
+group.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",revColor)
+	.append("textPath")
+	.attr("xlink:href","#pathID11")
+	.text("Revenue: $"+revLimit/2/1000000+" mil");
+var textArc1 = d3.svg.arc()
+    .innerRadius(radius+scaleJobs(jobLimit/2))
+    .outerRadius(radius+scaleJobs(jobLimit/2))
+    .startAngle(Math.PI/2-0.15)
+    .endAngle(Math.PI);
+group.append("path")
+	.attr("id","pathID111")
+	.attr("d",textArc1(1))
+	.attr("fill","none")
+	.attr("stroke-width","0");
+group.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",gdpColor)
+	.append("textPath")
+	.attr("xlink:href","#pathID111")
+	.text("GDP: $"+gdpLimit/2/1000000+" mil");
+
+//QuarterWay Scale Labels
+group.append("svg:circle")
+  .attr("r", radius+scaleJobs(jobLimit/4))
+  .attr("fill", "none")
+  .attr("stroke-width",1)
+  .attr("stroke","grey")
+  .attr("stroke-opacity",0.3)
+  .attr("class", "scale");
+var textArc1 = d3.svg.arc()
+    .innerRadius(radius+scaleJobs(jobLimit/4))
+    .outerRadius(radius+scaleJobs(jobLimit/4))
+    .startAngle(-Math.PI/25)
+    .endAngle(Math.PI / 6);
+group.append("path")
+	.attr("id","pathID2")
+	.attr("d",textArc1(1))
+	.attr("fill","none")
+	.attr("stroke-width","0");
+group.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",jobColor)
+	.append("textPath")
+	.attr("xlink:href","#pathID2")
+	.text("Jobs: "+jobLimit/4);
+var textArc1 = d3.svg.arc()
+    .innerRadius(radius+scaleJobs(jobLimit/4))
+    .outerRadius(radius+scaleJobs(jobLimit/4))
+    .startAngle(-Math.PI/2-0.13)
+    .endAngle(0);
+group.append("path")
+	.attr("id","pathID22")
+	.attr("d",textArc1(1))
+	.attr("fill","none")
+	.attr("stroke-width","0");
+group.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",revColor)
+	.append("textPath")
+	.attr("xlink:href","#pathID22")
+	.text("Revenue: $"+revLimit/4/1000000+" mil");
+var textArc1 = d3.svg.arc()
+    .innerRadius(radius+scaleJobs(jobLimit/4))
+    .outerRadius(radius+scaleJobs(jobLimit/4))
+    .startAngle(Math.PI/2-0.2)
+    .endAngle(Math.PI);
+group.append("path")
+	.attr("id","pathID222")
+	.attr("d",textArc1(1))
+	.attr("fill","none")
+	.attr("stroke-width","0");
+group.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",gdpColor)
+	.append("textPath")
+	.attr("xlink:href","#pathID222")
+	.text("GDP: $"+gdpLimit/4/1000000+" mil");
+
+//3/4th way Scale Labels
+group.append("svg:circle")
+  .attr("r", radius+scaleJobs(jobLimit/4*3))
+  .attr("fill", "none")
+  .attr("stroke-width",1)
+  .attr("stroke","grey")
+  .attr("stroke-opacity",0.3)
+  .attr("class", "scale");
+var textArc1 = d3.svg.arc()
+    .innerRadius(radius+scaleJobs(jobLimit/4*3))
+    .outerRadius(radius+scaleJobs(jobLimit/4*3))
+    .startAngle(-Math.PI/40)
+    .endAngle(Math.PI / 6);
+group.append("path")
+	.attr("id","pathID3")
+	.attr("d",textArc1(1))
+	.attr("fill","none")
+	.attr("stroke-width","0");
+group.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",jobColor)
+	.append("textPath")
+	.attr("xlink:href","#pathID3")
+	.text("Jobs: "+jobLimit/4*3);
+var textArc1 = d3.svg.arc()
+    .innerRadius(radius+scaleJobs(jobLimit/4*3))
+    .outerRadius(radius+scaleJobs(jobLimit/4*3))
+    .startAngle(-Math.PI/2-0.08)
+    .endAngle(0);
+group.append("path")
+	.attr("id","pathID33")
+	.attr("d",textArc1(1))
+	.attr("fill","none")
+	.attr("stroke-width","0");
+group.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",revColor)
+	.append("textPath")
+	.attr("xlink:href","#pathID33")
+	.text("Revenue: $"+revLimit/4*3/1000000+" mil");
+var textArc1 = d3.svg.arc()
+    .innerRadius(radius+scaleJobs(jobLimit/4*3))
+    .outerRadius(radius+scaleJobs(jobLimit/4*3))
+    .startAngle(Math.PI/2-0.12)
+    .endAngle(Math.PI);
+group.append("path")
+	.attr("id","pathID333")
+	.attr("d",textArc1(1))
+	.attr("fill","none")
+	.attr("stroke-width","0");
+group.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",gdpColor)
+	.append("textPath")
+	.attr("xlink:href","#pathID333")
+	.text("GDP: $"+gdpLimit/4*3/1000000+" mil");
+
+
+//Pairs each eduData element with an index
+sample=new Array(51);
+for (var i=0; i<51;i++){
+	sample[i]={num:i, eduDatum:eduData[i]};
+}
+
+//Visualizes the data
+render=function(arr){
+	//Arc for Jobs
+	arc1 = d3.svg.arc()
+	    .innerRadius(radius)
+	    .outerRadius(function(d){
+	    	return radius+scaleJobs(d.eduDatum.new_jobs_created);
+	    })
+	    .startAngle(function(d) {
+	    return scaleC(d.num*4);
+	})
+	    .endAngle(function(d) {
+	    return scaleC(d.num*4);
+	});
+
+	//Arc for Revenue
+	arc2 = d3.svg.arc()
+	    .innerRadius(radius)
+	    .outerRadius(function(d){
+	    	return radius+scaleRev(d.eduDatum.increased_state_revenue);
+	    })
+	    .startAngle(function(d) {
+	    return scaleC(d.num*4+1);
+	})
+	    .endAngle(function(d) {
+	    return scaleC(d.num*4+1);
+	});
+
+	//Arc for GDP
+	arc3 = d3.svg.arc()
+	    .innerRadius(radius)
+	    .outerRadius(function(d){
+	    	return radius+scaleGDP(d.eduDatum.growth_gdp);
+	    })
+	    .startAngle(function(d) {
+	    return scaleC(d.num*4+2);
+	})
+	    .endAngle(function(d) {
+	    return scaleC(d.num*4+2);
+	});
+
+	//State Label is placed above the TALLEST bar
+	arcText = d3.svg.arc()
+	    .innerRadius(function(d){
+	    	return radius+Math.max(
+	    		Math.max(scaleJobs(d.eduDatum.new_jobs_created),
+	    			scaleGDP(d.eduDatum.growth_gdp)), 
+	    			scaleRev(d.eduDatum.increased_state_revenue))+2;
+	    })
+	    .outerRadius(function(d){
+	    	return radius+Math.max(
+	    		Math.max(scaleJobs(d.eduDatum.new_jobs_created),
+	    			scaleGDP(d.eduDatum.growth_gdp)), 
+	    			scaleRev(d.eduDatum.increased_state_revenue))+2;
+	    })
+	    .startAngle(function(d) {
+	    return scaleC(d.num*4+1)-0.03;
+	})
+	    .endAngle(function(d) {
+	    return scaleC(d.num*4+1)+0.3;
+	});
+
+	//Render State Names
+	group.selectAll("stateLabelArc")
+	.data(arr)
+    .enter()
+    .append("path")
+    .attr("d", function(d) {
+        return arcText(d);
+    })
+    .attr("stroke-width", 0)
+    .attr("fill", "none")
+    .attr("id", function(d){
+    	return "stateId"+d.num
+    });
+
+	group.selectAll("stateLabelText")
+	.data(arr)
+    .enter()
+	.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","8px")
+	.attr("fill","black")
+	.append("textPath")
+	.attr("xlink:href",function(d){
+		return "#stateId"+d.num
+	})
+	.text(function(d){
+		return d.eduDatum.state;
+	});
+
+	//Renders the 3 bars
+	group.selectAll("bar1")
+	.data(arr)
+    .enter()
+    .append("svg:path")
+    .attr("d", function(d) {
+        return arc1(d);
+    })
+    .attr("stroke", jobColor)
+    .attr("stroke-opacity",0.7)
+    .attr("stroke-width", 3)
+    .attr("fill", "none");
+
+    group.selectAll("bar2")
+	.data(arr)
+    .enter()
+    .append("svg:path")
+    .attr("d", function(d) {
+        return arc2(d);
+    })
+    .attr("stroke", revColor)
+    .attr("stroke-opacity",0.7)
+    .attr("stroke-width", 3)
+    .attr("fill", "none");
+
+    group.selectAll("bar3")
+	.data(arr)
+    .enter()
+    .append("svg:path")
+    .attr("d", function(d) {
+        return arc3(d);
+    })
+    .attr("stroke", gdpColor)
+    .attr("stroke-opacity",0.7)
+    .attr("stroke-width", 3)
+    .attr("fill", "none");
+
+
+};
+
+render(sample);
+
+
+});
+</script>
+
+<!-- ..............................SECOND SVG................................................
+............................................................................................
+............................................................................................
+............................................................................................
+............................................................................................-->
+<div id="canvas2"></div>
+
+<script>
+var eduData;
+var maxJobs;
+var maxRev;
+var maxGDP;
+var mil=1000000	//for scaling population size
+
+//Load Json Data into eduData
+d3.json("EduScaled.json", function (error, data) {
+	eduData=data;
+
+	maxJobs= d3.max(eduData, function(d){return d.new_jobs_created/d.population*mil});
+	maxRev= d3.max(eduData, function(d){return d.increased_state_revenue/d.population*mil});
+	maxGDP= d3.max(eduData, function(d){return d.growth_gdp/d.population*mil});
+
+//Defines parameters of circle
+radius=120;
+extension=300;
+svgSize=900;
+titlePadding=50;
+
+jobColor="#00aaaa";
+revColor="#004444";
+gdpColor="#900090";
+
+console.log("jobs: "+maxJobs);
+console.log("rev: "+maxRev);
+console.log("gdp: "+maxGDP);
+//Defines ceiling limits based on the maximum of each data type
+var jobLimit=800;
+var revLimit=10000000;
+var gdpLimit=110000000;
+
+var svg = d3.select("#canvas2").append("svg").attr("height", svgSize+titlePadding).attr("width", svgSize);
+
+//Create the legend
+var linedata1 = [{"x":30, "y": 830},{"x":100, "y": 830}];
+var linedata2 = [{"x":30, "y": 870},{"x":100, "y": 870}];
+var linedata3 = [{"x":30, "y": 910},{"x":100, "y": 910}];
+
+var linedata11 = [{"x":90, "y": 820},{"x":85,"y":830},{"x":90, "y": 840}];
+var linedata12 = [{"x":70, "y": 810},{"x":60,"y":830},{"x":70, "y": 850}];
+var linedata13 = [{"x":50, "y": 800},{"x":35,"y":830},{"x":50, "y": 860}];
+
+var linedata21 = [{"x":90, "y": 860},{"x":85,"y":870},{"x":90, "y": 880}];
+var linedata22 = [{"x":70, "y": 850},{"x":60,"y":870},{"x":70, "y": 890}];
+var linedata23 = [{"x":50, "y": 840},{"x":35,"y":870},{"x":50, "y": 900}];
+
+var linedata31 = [{"x":90, "y": 900},{"x":85,"y":910},{"x":90, "y": 920}];
+var linedata32 = [{"x":70, "y": 890},{"x":60,"y":910},{"x":70, "y": 930}];
+var linedata33 = [{"x":50, "y": 880},{"x":35,"y":910},{"x":50, "y": 940}];
+
+var linefunction = d3.svg.line().x(function(d){return d.x;})
+								.y(function(d){return d.y;})
+								.interpolate("linear");
+var linefunction1 = d3.svg.line().x(function(d){return d.x;})
+								.y(function(d){return d.y;})
+								.interpolate("basis");
+
+var path1 = svg.append("path").attr("d",linefunction(linedata1))
+							  .attr("stroke",jobColor)
+							  .attr("stroke-width",2)
+							  .attr("opacity",0.7);
+var path11 = svg.append("path").attr("d",linefunction1(linedata11))
+							   .attr("id","idpath11")
+							   .attr("stroke","grey")
+							   .attr("opacity",0.3)
+							   .attr("stroke-width",1)
+							   .attr("fill","none");
+var path12 = svg.append("path").attr("d",linefunction1(linedata12))
+							   .attr("id","idpath12")
+							   .attr("stroke","grey")
+							   .attr("opacity",0.3)
+							   .attr("stroke-width",1)
+							   .attr("fill","none");
+var path13 = svg.append("path").attr("d",linefunction1(linedata13))
+							   .attr("id","idpath13")
+							   .attr("stroke","grey")
+							   .attr("opacity",0.3)
+							   .attr("stroke-width",1)
+							   .attr("fill","none");							   
+var path2 = svg.append("path").attr("d",linefunction(linedata2))
+							  .attr("stroke",revColor)
+							  .attr("stroke-width",2)
+							  .attr("opacity",0.7);
+var path21 = svg.append("path").attr("d",linefunction1(linedata21))
+							   .attr("id","idpath21")
+							   .attr("stroke","grey")
+							   .attr("opacity",0.3)
+							   .attr("stroke-width",1)
+							   .attr("fill","none");
+var path22 = svg.append("path").attr("d",linefunction1(linedata22))
+							   .attr("id","idpath22")
+							   .attr("stroke","grey")
+							   .attr("opacity",0.3)
+							   .attr("stroke-width",1)
+							   .attr("fill","none");
+var path23 = svg.append("path").attr("d",linefunction1(linedata23))
+							   .attr("id","idpath23")
+							   .attr("stroke","grey")
+							   .attr("opacity",0.3)
+							   .attr("stroke-width",1)
+							   .attr("fill","none");
+var path3 = svg.append("path").attr("d",linefunction(linedata3))
+							  .attr("stroke",gdpColor)
+							  .attr("stroke-width",2)
+var path31 = svg.append("path").attr("d",linefunction1(linedata31))
+							   .attr("id","idpath31")
+							   .attr("stroke","grey")
+							   .attr("opacity",0.3)
+							   .attr("stroke-width",1)
+							   .attr("fill","none");
+var path32 = svg.append("path").attr("d",linefunction1(linedata32))
+							   .attr("id","idpath32")
+							   .attr("stroke","grey")
+							   .attr("opacity",0.3)
+							   .attr("stroke-width",1)
+							   .attr("fill","none");
+var path33 = svg.append("path").attr("d",linefunction1(linedata33))
+							   .attr("id","idpath33")
+							   .attr("stroke","grey")
+							   .attr("opacity",0.3)
+							   .attr("stroke-width",1)
+							   .attr("fill","none")							  
+							   .attr("opacity",0.7);							
+
+var text1 = svg.append("text").attr("x",105)
+							  .attr("y",833)
+							  .text("New Jobs Created per Million Capita")
+							  .attr("font-size",10)
+							  .attr("fill",jobColor);
+var text11 = svg.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",jobColor)
+	.attr("x",85)
+	.attr("y",845)
+	.text(jobLimit/4);
+var text12 = svg.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",jobColor)
+	.attr("x",60)
+	.attr("y",850)
+	.text(jobLimit/2);
+var text13 = svg.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",jobColor)
+	.attr("x",35)
+	.attr("y",855)
+	.text(jobLimit*0.75);
+
+var text2 = svg.append("text").attr("x",105)
+							  .attr("y",873)
+							  .text("Increased State Revenue per Million Capita")
+							  .attr("font-size",10)
+							  .attr("fill",revColor);	
+var text21 = svg.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",revColor)
+	.attr("x",85)
+	.attr("y",885)
+	.text(revLimit/4/1000000+" mil");
+var text22 = svg.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",revColor)
+	.attr("x",60)
+	.attr("y",888)
+	.text(revLimit/2/1000000);
+var text23 = svg.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",revColor)
+	.attr("x",35)
+	.attr("y",895)
+	.text(revLimit*0.75/1000000);
+var text3 = svg.append("text").attr("x",105)
+							  .attr("y",913)
+							  .text("Gdp Growth per Million Capita")
+							  .attr("font-size",10)
+							  .attr("fill",gdpColor);
+var text31 = svg.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",gdpColor)
+	.attr("x",85)
+	.attr("y",927)
+	.text(gdpLimit/4/1000000+" mil");
+var text32 = svg.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",gdpColor)
+	.attr("x",60)
+	.attr("y",935)
+	.text(gdpLimit/2/1000000);
+var text33 = svg.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",gdpColor)
+	.attr("x",25)
+	.attr("y",940)
+	.text(gdpLimit*0.75/1000000);
+
+//Create Initial Circle Group and Title
+group=svg.append("svg:g").attr("transform", "translate(" + svgSize/2 + "," + (svgSize/2+titlePadding)+ ")");;
+group.append("circle")
+	.attr("class", "outercircle")
+	.attr("r", radius)
+	.attr("fill","none")
+	.attr("stroke-width",1)
+	.attr("stroke","grey");
+group.append("svg:circle")
+  .attr("r", radius-20)
+  .attr("fill", "none")
+  .attr("stroke-width",1)
+  .attr("stroke","grey")
+  .attr("stroke-opacity","0.5")
+  .attr("class", "clock innercircle");
+group.append("svg:text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","25px")
+	.attr("fill",jobColor)
+	.text("Economic Benefits Scaled By State Population")
+	.attr("x",-250)
+	.attr("y",-450);
+
+
+//Defines scales, with scaleC determining the spacing around the circumference
+pi = Math.PI;
+scaleC = d3.scale.linear().domain([0, 204]).range([0, 2 * pi]);
+scaleJobs= d3.scale.linear().domain([0,jobLimit]).range([0,extension]);
+scaleRev= d3.scale.linear().domain([0,revLimit]).range([0,extension]);
+scaleGDP= d3.scale.linear().domain([0,gdpLimit]).range([0,extension]);
+
+//Halfway Scale labels
+group.append("svg:circle")
+  .attr("r", radius+scaleJobs(jobLimit/2))
+  .attr("fill", "none")
+  .attr("stroke-width",1)
+  .attr("stroke","grey")
+  .attr("stroke-opacity",0.3)
+  .attr("class", "scale");
+var textArc1 = d3.svg.arc()
+    .innerRadius(radius+scaleJobs(jobLimit/2))
+    .outerRadius(radius+scaleJobs(jobLimit/2))
+    .startAngle(-Math.PI/30)
+    .endAngle(Math.PI / 6);
+group.append("path")
+	.attr("id","pathIDD1")
+	.attr("d",textArc1(1))
+	.attr("fill","none")
+	.attr("stroke-width","0");
+group.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",jobColor)
+	.append("textPath")
+	.attr("xlink:href","#pathIDD1")
+	.text("Jobs: "+jobLimit/2);
+var textArc1 = d3.svg.arc()
+    .innerRadius(radius+scaleJobs(jobLimit/2))
+    .outerRadius(radius+scaleJobs(jobLimit/2))
+    .startAngle(-Math.PI/2-0.1)
+    .endAngle(0);
+group.append("path")
+	.attr("id","pathIDD11")
+	.attr("d",textArc1(1))
+	.attr("fill","none")
+	.attr("stroke-width","0");
+group.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",revColor)
+	.append("textPath")
+	.attr("xlink:href","#pathIDD11")
+	.text("Revenue: $"+revLimit/2/1000000+" mil");
+var textArc1 = d3.svg.arc()
+    .innerRadius(radius+scaleJobs(jobLimit/2))
+    .outerRadius(radius+scaleJobs(jobLimit/2))
+    .startAngle(Math.PI/2-0.15)
+    .endAngle(Math.PI);
+group.append("path")
+	.attr("id","pathIDD111")
+	.attr("d",textArc1(1))
+	.attr("fill","none")
+	.attr("stroke-width","0");
+group.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",gdpColor)
+	.append("textPath")
+	.attr("xlink:href","#pathIDD111")
+	.text("GDP: $"+gdpLimit/2/1000000+" mil");
+
+//QuarterWay Scale Labels
+group.append("svg:circle")
+  .attr("r", radius+scaleJobs(jobLimit/4))
+  .attr("fill", "none")
+  .attr("stroke-width",1)
+  .attr("stroke","grey")
+  .attr("stroke-opacity",0.3)
+  .attr("class", "scale");
+var textArc1 = d3.svg.arc()
+    .innerRadius(radius+scaleJobs(jobLimit/4))
+    .outerRadius(radius+scaleJobs(jobLimit/4))
+    .startAngle(-Math.PI/25)
+    .endAngle(Math.PI / 6);
+group.append("path")
+	.attr("id","pathIDD2")
+	.attr("d",textArc1(1))
+	.attr("fill","none")
+	.attr("stroke-width","0");
+group.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",jobColor)
+	.append("textPath")
+	.attr("xlink:href","#pathIDD2")
+	.text("Jobs: "+jobLimit/4);
+var textArc1 = d3.svg.arc()
+    .innerRadius(radius+scaleJobs(jobLimit/4))
+    .outerRadius(radius+scaleJobs(jobLimit/4))
+    .startAngle(-Math.PI/2-0.13)
+    .endAngle(0);
+group.append("path")
+	.attr("id","pathIDD22")
+	.attr("d",textArc1(1))
+	.attr("fill","none")
+	.attr("stroke-width","0");
+group.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",revColor)
+	.append("textPath")
+	.attr("xlink:href","#pathIDD22")
+	.text("Revenue: $"+revLimit/4/1000000+" mil");
+var textArc1 = d3.svg.arc()
+    .innerRadius(radius+scaleJobs(jobLimit/4))
+    .outerRadius(radius+scaleJobs(jobLimit/4))
+    .startAngle(Math.PI/2-0.2)
+    .endAngle(Math.PI);
+group.append("path")
+	.attr("id","pathIDD222")
+	.attr("d",textArc1(1))
+	.attr("fill","none")
+	.attr("stroke-width","0");
+group.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",gdpColor)
+	.append("textPath")
+	.attr("xlink:href","#pathIDD222")
+	.text("GDP: $"+gdpLimit/4/1000000+" mil");
+
+//3/4th way Scale Labels
+group.append("svg:circle")
+  .attr("r", radius+scaleJobs(jobLimit/4*3))
+  .attr("fill", "none")
+  .attr("stroke-width",1)
+  .attr("stroke","grey")
+  .attr("stroke-opacity",0.3)
+  .attr("class", "scale");
+var textArc1 = d3.svg.arc()
+    .innerRadius(radius+scaleJobs(jobLimit/4*3))
+    .outerRadius(radius+scaleJobs(jobLimit/4*3))
+    .startAngle(-Math.PI/40)
+    .endAngle(Math.PI / 6);
+group.append("path")
+	.attr("id","pathIDD3")
+	.attr("d",textArc1(1))
+	.attr("fill","none")
+	.attr("stroke-width","0");
+group.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",jobColor)
+	.append("textPath")
+	.attr("xlink:href","#pathIDD3")
+	.text("Jobs: "+jobLimit/4*3);
+var textArc1 = d3.svg.arc()
+    .innerRadius(radius+scaleJobs(jobLimit/4*3))
+    .outerRadius(radius+scaleJobs(jobLimit/4*3))
+    .startAngle(-Math.PI/2-0.08)
+    .endAngle(0);
+group.append("path")
+	.attr("id","pathIDD33")
+	.attr("d",textArc1(1))
+	.attr("fill","none")
+	.attr("stroke-width","0");
+group.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",revColor)
+	.append("textPath")
+	.attr("xlink:href","#pathIDD33")
+	.text("Revenue: $"+revLimit/4*3/1000000+" mil");
+var textArc1 = d3.svg.arc()
+    .innerRadius(radius+scaleJobs(jobLimit/4*3))
+    .outerRadius(radius+scaleJobs(jobLimit/4*3))
+    .startAngle(Math.PI/2-0.12)
+    .endAngle(Math.PI);
+group.append("path")
+	.attr("id","pathIDD333")
+	.attr("d",textArc1(1))
+	.attr("fill","none")
+	.attr("stroke-width","0");
+group.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","10px")
+	.attr("fill",gdpColor)
+	.append("textPath")
+	.attr("xlink:href","#pathIDD333")
+	.text("GDP: $"+gdpLimit/4*3/1000000+" mil");
+
+
+//Pairs each eduData element with an index
+sample=new Array(51);
+for (var i=0; i<51;i++){
+	sample[i]={num:i, eduDatum:eduData[i]};
+}
+
+//Visualizes the data
+render=function(arr){
+	//Arc for Jobs
+	arc1 = d3.svg.arc()
+	    .innerRadius(radius)
+	    .outerRadius(function(d){
+	    	return radius+scaleJobs(d.eduDatum.new_jobs_created/d.eduDatum.population*mil);
+	    })
+	    .startAngle(function(d) {
+	    return scaleC(d.num*4);
+	})
+	    .endAngle(function(d) {
+	    return scaleC(d.num*4);
+	});
+
+	//Arc for Revenue
+	arc2 = d3.svg.arc()
+	    .innerRadius(radius)
+	    .outerRadius(function(d){
+	    	return radius+scaleRev(d.eduDatum.increased_state_revenue/d.eduDatum.population*mil);
+	    })
+	    .startAngle(function(d) {
+	    return scaleC(d.num*4+1);
+	})
+	    .endAngle(function(d) {
+	    return scaleC(d.num*4+1);
+	});
+
+	//Arc for GDP
+	arc3 = d3.svg.arc()
+	    .innerRadius(radius)
+	    .outerRadius(function(d){
+	    	return radius+scaleGDP(d.eduDatum.growth_gdp/d.eduDatum.population*mil);
+	    })
+	    .startAngle(function(d) {
+	    return scaleC(d.num*4+2);
+	})
+	    .endAngle(function(d) {
+	    return scaleC(d.num*4+2);
+	});
+
+	//State Label is placed above the TALLEST bar
+	arcText = d3.svg.arc()
+	    .innerRadius(function(d){
+	    	return radius+Math.max(
+	    		Math.max(scaleJobs(d.eduDatum.new_jobs_created/d.eduDatum.population*mil),
+	    			scaleGDP(d.eduDatum.growth_gdp/d.eduDatum.population*mil)), 
+	    			scaleRev(d.eduDatum.increased_state_revenue/d.eduDatum.population*mil))+2;
+	    })
+	    .outerRadius(function(d){
+	    	return radius+Math.max(
+	    		Math.max(scaleJobs(d.eduDatum.new_jobs_created/d.eduDatum.population*mil),
+	    			scaleGDP(d.eduDatum.growth_gdp/d.eduDatum.population*mil)), 
+	    			scaleRev(d.eduDatum.increased_state_revenue/d.eduDatum.population*mil))+2;
+	    })
+	    .startAngle(function(d) {
+	    return scaleC(d.num*4+1)-0.03;
+	})
+	    .endAngle(function(d) {
+	    return scaleC(d.num*4+1)+0.1;
+	});
+
+	//Render State Names
+	group.selectAll("stateLabelArc")
+	.data(arr)
+    .enter()
+    .append("path")
+    .attr("d", function(d) {
+        return arcText(d);
+    })
+    .attr("stroke-width", 0)
+    .attr("stroke", "black")
+    .attr("id", function(d){
+    	return "stateIdd"+d.num
+    });
+
+	group.selectAll("stateLabelText")
+	.data(arr)
+    .enter()
+	.append("text")
+	.attr("font-family","sans-serif")
+	.attr("font-size","8px")
+	.attr("fill","black")
+	.append("textPath")
+	.attr("xlink:href",function(d){
+		return "#stateIdd"+d.num
+	})
+	.text(function(d){
+		return d.eduDatum.state;
+	});
+
+	//Renders the 3 bars
+	group.selectAll("bar1")
+	.data(arr)
+    .enter()
+    .append("svg:path")
+    .attr("d", function(d) {
+        return arc1(d);
+    })
+    .attr("stroke", jobColor)
+    .attr("stroke-opacity",0.9)
+    .attr("stroke-width", 2.5)
+    .attr("fill", "none");
+
+    group.selectAll("bar2")
+	.data(arr)
+    .enter()
+    .append("svg:path")
+    .attr("d", function(d) {
+        return arc2(d);
+    })
+    .attr("stroke", revColor)
+    .attr("stroke-opacity",0.7)
+    .attr("stroke-width", 2.5)
+    .attr("fill", "none");
+
+    group.selectAll("bar3")
+	.data(arr)
+    .enter()
+    .append("svg:path")
+    .attr("d", function(d) {
+        return arc3(d);
+    })
+    .attr("stroke", gdpColor)
+    .attr("stroke-opacity",0.5)
+    .attr("stroke-width", 2.5)
+    .attr("fill", "none");
+
+
+};
+
+render(sample);
+
+
+});
+</script>
+
+</body>
+</html>

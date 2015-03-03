@@ -1,0 +1,116 @@
+<html>
+<head>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<style>
+/* put a border around the svg element so we can see the coordinate system better. */
+body { font-family: "Open Sans"; } div { margin: 30px; }
+svg { border: solid black 1px; }
+/* The default styles for axis elements stink. What should they be? */
+.axis path { fill: none; stroke: #777; }
+.axis line { stroke: #777; }
+</style>
+</head>
+<body>
+
+	<p>test the statistics</p>
+	<div id="canvas"></div>
+  <div id="canvas2"></div>
+	<script >
+	var dataset;	
+	d3.json("Edu.json", function(error, data) {
+  		dataset = data;
+      var maxInvestment = d3.max(dataset, function(d){
+        return d.increased_state_revenue;
+        //console.log(d.Investment);
+      });
+      var maxNewJobs = d3.max(dataset, function(d){
+        return d.new_jobs_created;
+      });
+      
+      var svg = d3.select("#canvas").append("svg").attr("height", 400).attr("width", 400);
+      
+
+      var ssg = d3.select("#canvas2").append("svg").attr("height", 400).attr("width", 400);
+
+      var xScale = d3.scale.linear().domain([0, 120]).range([70,370]);
+      var yScale = d3.scale.linear().domain([0, maxInvestment]).range([370,70]);
+      var yScale2 = d3.scale.linear().domain([0, maxNewJobs]).range([370,70]);
+      
+      var xAxis = d3.svg.axis().scale(xScale)
+      .orient("bottom").tickValues([25,50,75,100]).tickFormat(function(tickValues) { return tickValues+"%"; });
+      var yAxis = d3.svg.axis().scale(yScale)
+      .orient("left");
+      var yAxis2 = d3.svg.axis().scale(yScale2)
+      .orient("left");
+
+      svg.append("g").attr("class", "axis").
+      attr("transform", "translate(0,370)").call(xAxis).attr("font-size",10);
+      svg.append("g").attr("class", "axis")
+      .attr("transform", "translate(" + 70 + ",0)")
+      .call(yAxis).attr("font-size",10);
+
+      svg.append("text").attr("x", 200).attr("y",30).attr("text-anchor","middle").style("font-size","16px").text("Increased State Revenue($)");
+
+      ssg.append("g").attr("class", "axis").
+      attr("transform", "translate(0,370)").call(xAxis).attr("font-size",10);
+      ssg.append("g").attr("class", "axis")
+      .attr("transform", "translate(" + 70 + ",0)")
+      .call(yAxis2).attr("font-size",10);
+
+      ssg.append("text").attr("x", 200).attr("y",30).attr("text-anchor","middle").style("font-size","16px").text("New Jobs Created");
+      
+      var contents = svg.append("g");
+    
+      var rects = svg.selectAll("rect").data(dataset)
+        .enter().append("rect");
+      var w = 20;
+
+      rects.attr("x" , function(d) { 
+        var pos = d.percentage.indexOf("%");
+        return xScale(+d.percentage.substr(0,pos))-w/2;
+      })
+      .attr("y", function(d) { return yScale(d.increased_state_revenue)})
+      .attr("width",w)
+      .attr("height",function(d) { return 370-yScale(d.increased_state_revenue)})
+      .attr("opacity",0.3);
+
+      var texts = contents.selectAll("text").data(dataset).enter().append("text");
+    
+      texts.attr("x", function(d) { 
+        var pos = d.percentage.indexOf("%");
+        return xScale(+d.percentage.substr(0,pos)-w/2)})
+      .attr("y", function(d) { return yScale(d.increased_state_revenue) })
+      .text(function(d) { return d.increased_state_revenue; })
+      .attr("font-size",10);
+
+      // do with NewJobs
+      var contentss = ssg.append("g");
+    
+      var rectss = ssg.selectAll("rect").data(dataset)
+        .enter().append("rect");
+
+      rectss.attr("x" , function(d) { 
+          var pos = d.percentage.indexOf("%");
+        return xScale(+d.percentage.substr(0,pos))-w/2})
+      .attr("y", function(d) { return yScale2(d.new_jobs_created)})
+      .attr("width",20)
+      .attr("height",function(d) { return 370-yScale2(d.new_jobs_created)})
+      .attr("opacity",0.3);
+
+      var textss = contentss.selectAll("text").data(dataset).enter().append("text");
+    
+      textss.attr("x", function(d) { 
+          var pos = d.percentage.indexOf("%");
+          return xScale(+d.percentage.substr(0,pos))-w/2})
+      .attr("y", function(d) { return yScale2(d.new_jobs_created) })
+      .text(function(d) { return d.new_jobs_created; })
+      .attr("font-size",10);
+
+
+	});
+  
+	</script>
+</body>
+</html>
